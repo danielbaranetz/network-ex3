@@ -136,7 +136,7 @@ def handle_client(conn: socket.socket, addr, max_msg_size, dynamic_size):
         try:
             print(full_content.decode(errors='ignore'))
         except:
-            print("[Binary data received]")
+            print("Binary data received")
 
 
 # Run server
