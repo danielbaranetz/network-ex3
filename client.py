@@ -138,12 +138,15 @@ def perform_client_handshake(sock: socket.socket):
         return False
 
 
+import time
+import socket
+
+
 def send_file_reliable(sock, file_data, window_size, timeout, max_msg_size, is_dynamic):
     packets = []
     total_len = len(file_data)
     current_pos = 0
 
-    # חיתוך הקובץ
     while current_pos < total_len:
         chunk = file_data[current_pos: current_pos + max_msg_size]
         packets.append(chunk)
@@ -170,6 +173,7 @@ def send_file_reliable(sock, file_data, window_size, timeout, max_msg_size, is_d
             try:
                 sock.send(msg_to_send)
                 print(f"Sent packet {next_seq}")
+                time.sleep(0.05)  # avoid TCP sticky packets
                 next_seq += 1
             except Exception as e:
                 print(f"Error sending: {e}")
@@ -180,14 +184,19 @@ def send_file_reliable(sock, file_data, window_size, timeout, max_msg_size, is_d
             ack_str = ack_data.decode().strip()
 
             if "|" in ack_str:
-                ack_num_str, new_size_str = ack_str.split("|")
-                ack_num = int(ack_num_str)
+                parts = ack_str.split("|")
 
-                if is_dynamic:
-                    new_size = int(new_size_str)
-                    if new_size != max_msg_size:
-                        print(f"Server requested new max size: {new_size}")
-                        max_msg_size = new_size
+                if parts[0].isdigit():
+                    ack_num = int(parts[0])
+
+                if is_dynamic and len(parts) > 1:
+                    size_candidate = ''.join(filter(str.isdigit, parts[1]))
+
+                    if size_candidate:
+                        new_size = int(size_candidate)
+                        if new_size != max_msg_size:
+                            print(f"\nServer requested Dynamic Size Update: {max_msg_size} -> {new_size} bytes\n")
+                            max_msg_size = new_size
             else:
                 ack_num = int(ack_str)
 
@@ -197,11 +206,12 @@ def send_file_reliable(sock, file_data, window_size, timeout, max_msg_size, is_d
                 base = ack_num + 1
 
         except socket.timeout:
-            print(f"No ACK received for {timeout} seconds. Resending window from {base}... ")
-            next_seq = base
+            print(f"No ACK received for {timeout} seconds. Resending window from {base}...")
+            next_seq = base  # Go-Back-N
 
         except ValueError:
-            print("Received invalid ACK format")
+            print(f"Warning: Received raw data '{ack_str}' which caused parsing error, ignoring.")
+
         except Exception as e:
             print(f"Error {e}")
             break

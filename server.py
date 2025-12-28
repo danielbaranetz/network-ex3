@@ -8,6 +8,7 @@ MSG_SIN_ACK = b"SIN/ACK"
 MSG_ACK = b"ACK"
 MSG_NEGOTIATION_REQUEST = b"MAX_SIZE_REQ"
 
+PORT = 5555
 
 
 def load_config(filename="server_config.txt"):  # Pre-defined file to override
@@ -62,7 +63,7 @@ def perform_handshake(conn: socket.socket) -> bool:
 
 def handle_client(conn: socket.socket, addr, max_msg_size, dynamic_size):
     with conn:
-        print(f"[new connection] {addr} started.")
+        print(f"new connection {addr} started.")
 
         if not perform_handshake(conn):
             print(f"[connection closed] {addr}")
