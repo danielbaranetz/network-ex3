@@ -207,7 +207,7 @@ def send_file_reliable(sock, file_data, window_size, timeout, max_msg_size, is_d
 
         except socket.timeout:
             print(f"No ACK received for {timeout} seconds. Resending window from {base}...")
-            next_seq = base  # Go-Back-N
+            next_seq = base
 
         except ValueError:
             print(f"Warning: Received raw data '{ack_str}' which caused parsing error, ignoring.")
